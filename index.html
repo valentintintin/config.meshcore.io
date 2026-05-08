@@ -311,8 +311,8 @@
           </div>
       </fieldset>
 
-        <fieldset :disabled="app.locked" v-if="app.device.role === 'room-server'">
-          <legend>Room server settings</legend>
+        <fieldset :disabled="app.locked" v-if="app.device.role === 'repeater'">
+          <legend>Repeater settings</legend>
           <div class="actions">
           <label class="checkbox">
             <input type="checkbox" v-model="app.device.vars.repeat">
@@ -321,6 +321,102 @@
               Enables or disables the repeater role for this node. Default: on
             </div>
           </label>
+          </div>
+        </fieldset>
+
+        <fieldset :disabled="app.locked" v-if="app.device.role === 'repeater'">
+          <legend>Bridge Meshtastic</legend>
+          <fieldset>
+            <legend>Configuration</legend>
+            <div class="row">
+              <label class="checkbox">
+                <input type="checkbox" v-model="mtBridge.enabled">
+                <span>Enabled</span>
+              </label>
+              <div class="field border label max">
+                <input placeholder=" " type="number" min="0" step="1" v-model="mtBridge.tx_delay">
+                <label>TX delay (ms)</label>
+              </div>
+            <div class="row">
+              <div class="field border label max">
+                <input placeholder=" " type="number" min="0" step="1" v-model="mtBridge.mc_rx_timeout">
+                <label>MC RX Timeout (s)</label>
+              </div>
+              <div class="field border label max">
+                <input placeholder=" " type="number" min="0" step="1" v-model="mtBridge.mt_rx_timeout">
+                <label>MT RX Timeout (s)</label>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Serial Settings</legend>
+            <div class="row">
+              <div class="field border label max">
+                <input placeholder=" " type="number" min="0" step="1" v-model="mtBridge.baud_rate">
+                <label>Baud rate</label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field border label max">
+                <input placeholder=" " type="number" step="1" v-model="mtBridge.rx_pin">
+                <label>RX pin</label>
+              </div>
+              <div class="field border label max">
+                <input placeholder=" " type="number" step="1" v-model="mtBridge.tx_pin">
+                <label>TX pin</label>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Channels</legend>
+            <div class="row">
+              <button @click="mtGetChannels"><i>list</i><span>Get channels</span></button>
+              <div class="field border label max">
+                <input placeholder=" " type="number" min="0" step="1" v-model="mtBridge.channelIndex">
+                <label>Channel index</label>
+              </div>
+              <button @click="mtGetChannel"><i>settings_ethernet</i><span>Get channel</span></button>
+            </div>
+            <div class="row">
+              <div class="field border label max">
+                <input placeholder=" " v-model="mtBridge.channelName">
+                <label>Channel name (or -)</label>
+              </div>
+              <div class="field border label max">
+                <input placeholder=" " v-model="mtBridge.channelRegion">
+                <label>Region</label>
+              </div>
+              <button @click="mtSetChannel"><i>edit</i><span>Set channel</span></button>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Get Meshtastic Nodes</legend>
+            <div class="row">
+              <div class="field border label max">
+                <input placeholder=" " type="number" min="0" step="1" v-model="mtBridge.nodeIndex">
+                <label>Node index</label>
+              </div>
+              <button @click="mtGetNode"><i>router</i><span>Get node</span></button>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Actions</legend>
+            <div class="actions">
+              <button @click="mtReload"><i>sync</i><span>Reload MT</span></button>
+              <button @click="mtStats"><i>monitoring</i><span>Stats MT</span></button>
+              <button @click="mtTest"><i>send</i><span>Test (get info from MT + send message to MT)</span></button>
+              <button @click="mtReset"><i>restart_alt</i><span>Clear stats MT</span></button>
+            </div>
+          </fieldset>
+          <div class="field textarea border label max">
+            <textarea placeholder=" " :value="mtBridge.reply" readonly></textarea>
+            <label>Command Result</label>
+          </div>
+        </fieldset>
+
+        <fieldset :disabled="app.locked" v-if="app.device.role === 'room-server'">
+          <legend>Room server settings</legend>
+          <div class="actions">
           <label class="checkbox">
             <input type="checkbox" v-model="app.device.vars['allow.read.only']">
             <span>Read only</span>

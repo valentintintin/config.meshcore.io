@@ -2,6 +2,10 @@
 
 Web-based configuration tool for MeshCore Repeater, Room Server and Sensor nodes via USB serial (Web Serial API).
 
+## Fork
+
+- Add commands for **Meshtastic Bridge** : https://github.com/valentintintin/MeshCore
+
 ## Features
 
 - **USB Serial connection** to MeshCore nodes using the Web Serial API

@@ -70,6 +70,21 @@ createApp({
         varsDevice: {}
       },
     });
+    const mtBridge = reactive({
+      enabled: false,
+      tx_delay: 0,
+      rx_pin: 0,
+      tx_pin: 0,
+      baud_rate: 115200,
+      mc_rx_timeout: 0,
+      mt_rx_timeout: 0,
+      channelIndex: 0,
+      channelName: '',
+      channelRegion: '',
+      nodeIndex: 0,
+      reply: '',
+      device: {},
+    });
 
     const fwVersion = computed(() => parseFirmwareVersion(app.device.version));
 
@@ -303,8 +318,47 @@ createApp({
         vars[key] = value;
         varsDevice[key] = typeof value === 'object' ? { ...value } : value;
       }
+      if (app.device.role === 'repeater') {
+        await loadMeshtasticBridgeData();
+      }
       app.busy = '';
     }
+
+    const parseMtGetResponse = (response) => {
+      if (typeof response !== 'string' || !response.startsWith('>')) return null;
+      const raw = response.slice(1).trim();
+      if (raw === 'on') return true;
+      if (raw === 'off') return false;
+      const numMatch = raw.match(/^-?\d+/);
+      if (numMatch) return Number(numMatch[0]);
+      return raw;
+    };
+
+    const mtSend = async (command, updateReply = false) => {
+      const response = await cli.sendCommand(`mt ${command}`);
+      if (updateReply) mtBridge.reply = response;
+      return response;
+    };
+
+    const loadMeshtasticBridgeData = async () => {
+      const keys = ['enabled', 'tx_delay', 'rx_pin', 'tx_pin', 'baud_rate', 'mc_rx_timeout', 'mt_rx_timeout'];
+      for (const key of keys) {
+        const response = await mtSend(`get ${key}`);
+        const value = parseMtGetResponse(response);
+        if (value !== null) mtBridge[key] = value;
+      }
+      mtBridge.device = {
+        enabled: !!mtBridge.enabled,
+        tx_delay: Number(mtBridge.tx_delay),
+        rx_pin: Number(mtBridge.rx_pin),
+        tx_pin: Number(mtBridge.tx_pin),
+        baud_rate: Number(mtBridge.baud_rate),
+        mc_rx_timeout: Number(mtBridge.mc_rx_timeout),
+        mt_rx_timeout: Number(mtBridge.mt_rx_timeout),
+      };
+
+      mtGetChannels();
+    };
 
     const setData = async() => {
       const vars = app.device.vars;
@@ -352,6 +406,26 @@ createApp({
         if(app.device.password) {
           await cli.sendCommand(`password ${app.device.password}`);
           app.device.password = '';
+        }
+        if (app.device.role === 'repeater') {
+          const changed =
+            mtBridge.enabled !== mtBridge.device.enabled ||
+            Number(mtBridge.tx_delay) !== mtBridge.device.tx_delay ||
+            Number(mtBridge.rx_pin) !== mtBridge.device.rx_pin ||
+            Number(mtBridge.tx_pin) !== mtBridge.device.tx_pin ||
+            Number(mtBridge.baud_rate) !== mtBridge.device.baud_rate ||
+            Number(mtBridge.mc_rx_timeout) !== mtBridge.device.mc_rx_timeout ||
+            Number(mtBridge.mt_rx_timeout) !== mtBridge.device.mt_rx_timeout;
+          if (changed) {
+            await mtSend(`set enabled ${mtBridge.enabled ? 'on' : 'off'}`);
+            await mtSend(`set tx_delay ${Number(mtBridge.tx_delay)}`);
+            await mtSend(`set rx_pin ${Number(mtBridge.rx_pin)}`);
+            await mtSend(`set tx_pin ${Number(mtBridge.tx_pin)}`);
+            await mtSend(`set baud_rate ${Number(mtBridge.baud_rate)}`);
+            await mtSend(`set mc_rx_timeout ${Number(mtBridge.mc_rx_timeout)}`);
+            await mtSend(`set mt_rx_timeout ${Number(mtBridge.mt_rx_timeout)}`);
+            await mtSend('save');
+          }
         }
         await getData();
         if(needsReboot) {
@@ -508,8 +582,62 @@ createApp({
         if (!(key in varsDevice)) continue;
         if (JSON.stringify(vars[key]) !== JSON.stringify(varsDevice[key])) return true;
       }
+      if (app.device.role === 'repeater') {
+        const mtChanged =
+          mtBridge.enabled !== mtBridge.device.enabled ||
+          Number(mtBridge.tx_delay) !== mtBridge.device.tx_delay ||
+          Number(mtBridge.rx_pin) !== mtBridge.device.rx_pin ||
+          Number(mtBridge.tx_pin) !== mtBridge.device.tx_pin ||
+          Number(mtBridge.baud_rate) !== mtBridge.device.baud_rate ||
+          Number(mtBridge.mc_rx_timeout) !== mtBridge.device.mc_rx_timeout ||
+          Number(mtBridge.mt_rx_timeout) !== mtBridge.device.mt_rx_timeout;
+        if (mtChanged) return true;
+      }
       return !!app.device.password || !!app.device.importPrvKey;
     });
+
+    const mtReload = async () => {
+      const reply = await mtSend('reload', true);
+      showMessage(`Bridge replied: ${reply}`, 'sync');
+      await loadMeshtasticBridgeData();
+    };
+
+    const mtStats = async () => {
+      await mtSend('stats', true);
+    };
+
+    const mtTest = async () => {
+      await mtSend('test', true);
+    };
+
+    const mtReset = async () => {
+      if (!confirm('Reset Meshtastic bridge settings?')) return;
+      const reply = await mtSend('reset', true);
+      showMessage(`Bridge replied: ${reply}`, 'restart_alt');
+      await loadMeshtasticBridgeData();
+    };
+
+    const mtGetChannels = async () => {
+      await mtSend('get channels', true);
+    };
+
+    const mtGetChannel = async () => {
+      await mtSend(`get channel ${Number(mtBridge.channelIndex)}`, true);
+    };
+
+    const mtSetChannel = async () => {
+      const index = Number(mtBridge.channelIndex);
+      const name = String(mtBridge.channelName || '').trim();
+      const region = String(mtBridge.channelRegion || '').trim();
+      const parts = [`set channel ${index}`];
+      if (name) parts.push(name);
+      if (region) parts.push(region);
+      await mtSend(parts.join(' '), true);
+    };
+
+    const mtGetNode = async () => {
+      await mtSend(`get node ${Number(mtBridge.nodeIndex)}`, true);
+    };
 
     const exportConfig = async () => {
       const vars = app.device.vars;
@@ -778,7 +906,8 @@ createApp({
       consoleDialog, consoleOutput, consoleCmdInput, consoleLog, consoleCmd, consoleBusy,
       openConsole, sendConsoleCmd, consoleHistoryUp, consoleHistoryDown,
       consoleFocus, consoleCopy, consoleTab, consoleSuggestion,
-      supportsVar
+      supportsVar,
+      mtBridge, mtReload, mtStats, mtTest, mtReset, mtGetChannels, mtGetChannel, mtSetChannel, mtGetNode
     }
   },
 }).mount('#app');

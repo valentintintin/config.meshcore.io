@@ -408,24 +408,7 @@ createApp({
           app.device.password = '';
         }
         if (app.device.role === 'repeater') {
-          const changed =
-            mtBridge.enabled !== mtBridge.device.enabled ||
-            Number(mtBridge.tx_delay) !== mtBridge.device.tx_delay ||
-            Number(mtBridge.rx_pin) !== mtBridge.device.rx_pin ||
-            Number(mtBridge.tx_pin) !== mtBridge.device.tx_pin ||
-            Number(mtBridge.baud_rate) !== mtBridge.device.baud_rate ||
-            Number(mtBridge.mc_rx_timeout) !== mtBridge.device.mc_rx_timeout ||
-            Number(mtBridge.mt_rx_timeout) !== mtBridge.device.mt_rx_timeout;
-          if (changed) {
-            await mtSend(`set enabled ${mtBridge.enabled ? 'on' : 'off'}`);
-            await mtSend(`set tx_delay ${Number(mtBridge.tx_delay)}`);
-            await mtSend(`set rx_pin ${Number(mtBridge.rx_pin)}`);
-            await mtSend(`set tx_pin ${Number(mtBridge.tx_pin)}`);
-            await mtSend(`set baud_rate ${Number(mtBridge.baud_rate)}`);
-            await mtSend(`set mc_rx_timeout ${Number(mtBridge.mc_rx_timeout)}`);
-            await mtSend(`set mt_rx_timeout ${Number(mtBridge.mt_rx_timeout)}`);
-            await mtSend('save');
-          }
+          await mtSend('save');
         }
         await getData();
         if(needsReboot) {
@@ -788,6 +771,7 @@ createApp({
       'get bridge.secret', 'set bridge.secret',
       'get bootloader.ver',
       'get pwrmgt.support', 'get pwrmgt.source', 'get pwrmgt.bootreason', 'get pwrmgt.bootmv',
+        // TODO MT commands
     ];
 
     const consoleSuggestion = ref('');

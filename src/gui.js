@@ -566,15 +566,7 @@ createApp({
         if (JSON.stringify(vars[key]) !== JSON.stringify(varsDevice[key])) return true;
       }
       if (app.device.role === 'repeater') {
-        const mtChanged =
-          mtBridge.enabled !== mtBridge.device.enabled ||
-          Number(mtBridge.tx_delay) !== mtBridge.device.tx_delay ||
-          Number(mtBridge.rx_pin) !== mtBridge.device.rx_pin ||
-          Number(mtBridge.tx_pin) !== mtBridge.device.tx_pin ||
-          Number(mtBridge.baud_rate) !== mtBridge.device.baud_rate ||
-          Number(mtBridge.mc_rx_timeout) !== mtBridge.device.mc_rx_timeout ||
-          Number(mtBridge.mt_rx_timeout) !== mtBridge.device.mt_rx_timeout;
-        if (mtChanged) return true;
+	return true;
       }
       return !!app.device.password || !!app.device.importPrvKey;
     });
